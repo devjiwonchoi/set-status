@@ -1,13 +1,17 @@
 {
-  "name": "next-status",
+  "name": "set-status",
   "version": "0.0.0",
-  "description": "Temporary solution for manipulating status code on Next.js App Router.",
-  "main": "dist/index.js",
+  "description": "Set custom status code to the browser through proxy and meta tag.",
+  "bin": {
+    "proxy-status": "dist/bin.js"
+  },
   "scripts": {
+    "dev": "tsx watch src/bin/proxy-status.ts",
     "build": "bunchee",
-    "start": "tsx watch src/server.ts"
+    "start": "node dist/bin.js"
   },
   "dependencies": {
+    "arg": "^5.0.2",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "http-proxy-middleware": "^2.0.6"
@@ -20,10 +24,12 @@
     "typescript": "^5.3.3"
   },
   "keywords": [
-    "next",
-    "next.js",
     "status",
-    "status code"
+    "status code",
+    "browser",
+    "proxy",
+    "next",
+    "next.js"
   ],
   "author": "Jiwon Choi",
   "license": "MIT"
