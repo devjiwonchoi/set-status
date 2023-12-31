@@ -1,74 +1,54 @@
-import * as cheerio from 'cheerio'
-import { Request, Response } from 'express'
-import { IncomingMessage } from 'http'
+import type { IncomingMessage } from 'http'
+import type { Request } from 'express'
+import { createGunzip, createGzip } from 'zlib'
 import { createProxyMiddleware } from 'http-proxy-middleware'
-import zlib from 'zlib'
-import { shouldIgnorePath } from './ignore-config'
+import { TARGET_META_NAME, TARGET_URL, IGNORE_PATH_REGEX } from './constants'
 
-const targetMetaName: string = process.env.TARGET_META_NAME || 'app:status'
+const isIgnorePath = (requestPath: string) =>
+  new RegExp(IGNORE_PATH_REGEX).test(requestPath)
 
-/**
- * Filters incoming proxy responses based on the request and response criteria.
- *
- * @param proxyRes - The incoming message from the proxy.
- * @param req - The express request object.
- * @returns A boolean indicating whether the response should be processed further.
- */
-function filter(proxyRes: IncomingMessage, req: Request): boolean {
-  const path: string = req.path
+function isPossiblyTargetPath(proxyRes: IncomingMessage, req: Request) {
+  const { path, method } = req
+  const { headers } = proxyRes
 
-  if (shouldIgnorePath(path)) {
-    return false
-  }
+  if (isIgnorePath(path)) return false
 
   return Boolean(
-    req.method === 'GET' &&
-      proxyRes.headers['content-type']?.includes('text/html') &&
-      proxyRes.headers['content-encoding']?.includes('gzip')
+    method === 'GET' &&
+      headers['content-type']?.includes('text/html') &&
+      headers['content-encoding']?.includes('gzip')
   )
 }
 
-/**
- * Processes the body of the response to extract a specific meta tag content.
- *
- * @param body - The body of the response as a string.
- * @returns The content of the meta tag if found, otherwise undefined.
- */
-function processBody(body: string): string | undefined {
-  if (body.includes(targetMetaName)) {
-    const $ = cheerio.load(body)
-    return $(`meta[name="${targetMetaName}"]`).attr('content')
-  }
+function getStatusFromBody(body: string) {
+  const metaTagPattern = new RegExp(
+    `<meta\\s+name="${TARGET_META_NAME}"\\s+content="(.*?)"`,
+    'i'
+  )
+  const match = body.match(metaTagPattern)
+  return match?.[1]
 }
 
-/**
- * Proxy middleware that processes responses from a Next.js server and streams them to the client.
- * It inspects the streamed response for a specific meta tag ('app:response') and, if present,
- * uses its content to modify the response's status code. This allows for dynamic status code
- * manipulation based on the server's response, while preserving the streaming functionality of Next.js.
- *
- */
 const proxyMiddleware = createProxyMiddleware({
-  target: process.env.TARGET_URL || 'http://localhost:3000',
+  target: TARGET_URL,
   selfHandleResponse: true,
-  onProxyRes: (proxyRes: IncomingMessage, req: Request, res: Response) => {
-    console.log('Current path : ' + req.path)
-
+  onProxyRes: (proxyRes, req, res) => {
     Object.keys(proxyRes.headers).forEach((key) => {
       const headerValue = proxyRes.headers[key]
-      if (headerValue !== undefined) {
+      if (headerValue) {
         res.setHeader(key, headerValue)
       }
     })
 
-    proxyRes.statusCode && res.status(proxyRes.statusCode)
+    if (proxyRes.statusCode) {
+      res.status(proxyRes.statusCode)
+    }
 
-    if (filter(proxyRes, req)) {
-      console.log('Filtered path : ' + req.path)
-      let statusCodeSet: boolean = false
+    if (isPossiblyTargetPath(proxyRes, req)) {
+      let statusIsSet: boolean = false
 
-      const gunzip: zlib.Gunzip = zlib.createGunzip()
-      const gzip: zlib.Gzip = zlib.createGzip()
+      const gunzip = createGunzip()
+      const gzip = createGzip()
 
       proxyRes.pipe(gunzip)
       gzip.pipe(res)
@@ -77,12 +57,15 @@ const proxyMiddleware = createProxyMiddleware({
 
       gunzip.on('data', (data: Buffer) => {
         body.push(data)
-        if (!statusCodeSet) {
-          const statusCode = processBody(body.toString())
-          if (!statusCode) return
-          res.status(parseInt(statusCode))
-          statusCodeSet = true
+
+        if (!statusIsSet) {
+          const statusCode = getStatusFromBody(body.toString())
+          if (statusCode) {
+            res.status(parseInt(statusCode))
+            statusIsSet = true
+          }
         }
+
         gzip.write(Buffer.concat(body))
         body = []
       })
@@ -99,7 +82,6 @@ const proxyMiddleware = createProxyMiddleware({
         gzip.emit('error', err)
       })
     } else {
-      // Directly pipe proxy response to express response for non-filtered paths
       proxyRes.pipe(res)
     }
   },

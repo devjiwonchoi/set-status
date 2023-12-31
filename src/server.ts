@@ -1,20 +1,14 @@
 import express from 'express'
-import dotenv from 'dotenv'
 import proxyMiddleware from './next-status-proxy'
-
-dotenv.config()
+import { PROXY_SERVER_PORT } from './constants'
 
 const app = express()
-
 app.use('*', proxyMiddleware)
 
-const port = process.env.PROXY_PORT ?? '3001'
-
-const server = app.listen(parseInt(port), () => {
-  console.log(`Server is running on port ${port}`)
+const server = app.listen(parseInt(PROXY_SERVER_PORT), () => {
+  console.log(`Proxy server is running on port ${PROXY_SERVER_PORT}`)
 })
 
-// Handle SIGTERM signal
 process.on('SIGTERM', () => {
   console.log('SIGTERM signal received. Shutting down gracefully.')
   server.close(() => {
