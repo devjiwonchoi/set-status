@@ -2,16 +2,16 @@ import type { IncomingMessage } from 'http'
 import type { Request } from 'express'
 import { createGunzip, createGzip } from 'zlib'
 import { createProxyMiddleware } from 'http-proxy-middleware'
-import { shouldIgnorePath } from './ignore-config'
-import { TARGET_META_NAME } from './constants'
+import { TARGET_META_NAME, TARGET_URL, IGNORE_PATH_REGEX } from './constants'
 
-function isIgnoredPath(proxyRes: IncomingMessage, req: Request) {
+const isIgnorePath = (requestPath: string) =>
+  new RegExp(IGNORE_PATH_REGEX).test(requestPath)
+
+function isPossiblyTargetPath(proxyRes: IncomingMessage, req: Request) {
   const { path, method } = req
   const { headers } = proxyRes
 
-  if (shouldIgnorePath(path)) {
-    return false
-  }
+  if (isIgnorePath(path)) return false
 
   return Boolean(
     method === 'GET' &&
@@ -30,7 +30,7 @@ function getStatusFromBody(body: string) {
 }
 
 const proxyMiddleware = createProxyMiddleware({
-  target: process.env.TARGET_URL ?? 'http://localhost:3000',
+  target: TARGET_URL,
   selfHandleResponse: true,
   onProxyRes: (proxyRes, req, res) => {
     Object.keys(proxyRes.headers).forEach((key) => {
@@ -44,7 +44,7 @@ const proxyMiddleware = createProxyMiddleware({
       res.status(proxyRes.statusCode)
     }
 
-    if (isIgnoredPath(proxyRes, req)) {
+    if (isPossiblyTargetPath(proxyRes, req)) {
       let statusIsSet: boolean = false
 
       const gunzip = createGunzip()
