@@ -1,6 +1,6 @@
 {
   "name": "set-status",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Set a custom HTTP status code for the client by utilizing proxy and a meta tag.",
   "bin": {
     "proxy-status": "dist/bin.js"
@@ -22,7 +22,13 @@
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   },
+  "files": [
+    "dist",
+    "*.md"
+  ],
   "repository": "https://github.com/devjiwonchoi/set-status",
+  "author": "Jiwon Choi",
+  "license": "MIT",
   "keywords": [
     "status",
     "status code",
@@ -31,7 +37,5 @@
     "proxy",
     "next",
     "next.js"
-  ],
-  "author": "Jiwon Choi",
-  "license": "MIT"
+  ]
 }
