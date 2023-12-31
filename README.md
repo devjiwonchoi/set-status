@@ -4,6 +4,8 @@
 
 **Note: Manipulating HTTP status code is not recommended for production. Use at your own risk.**
 
+Current v0 is inspired by [next-status-proxy](https://github.com/suleymangezsat/next-status-proxy).
+
 ## Install
 
 ```sh
