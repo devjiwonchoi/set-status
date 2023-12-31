@@ -63,6 +63,8 @@ pnpm start
 
 ### Next.js
 
+> See examples in [`examples/nextjs`](./examples/nextjs).
+
 In Next.js, you can statically set a custom `meta` tag by using a `Metadata` API.
 
 Through this, we can set the status code read from the target meta tag.
