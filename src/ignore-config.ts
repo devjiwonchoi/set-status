@@ -1,19 +1,23 @@
-import fs from 'fs';
-import path from 'path';
+import { existsSync, readFileSync } from 'fs'
+import { join } from 'path'
+import rootDir from 'grdp'
 
-const ignoreFile = path.join(__dirname, '../.proxystatusignore');
-let ignorePatterns: string[] = [];
+const ignoreFilePath = join(rootDir(), '.proxystatusignore')
+let ignorePatterns: string[] = []
 
 try {
-  if (fs.existsSync(ignoreFile)) {
-    const fileContent = fs.readFileSync(ignoreFile, 'utf8');
-    ignorePatterns = fileContent.split('\n').filter(Boolean);
+  if (existsSync(ignoreFilePath)) {
+    const fileContent = readFileSync(ignoreFilePath, 'utf8')
+    ignorePatterns = fileContent.split('\n').filter(Boolean)
   } else {
-    console.warn(`Warning: Ignore file '${ignoreFile}' not found. No paths will be ignored.`);
+    console.warn(
+      `Warning: Ignore file '${ignoreFilePath}' not found. No paths will be ignored.`
+    )
   }
 } catch (err) {
-  console.error(`Error reading '${ignoreFile}':`, err);
+  console.error(`Error reading '${ignoreFilePath}':`, err)
 }
+
 export function shouldIgnorePath(requestPath: string): boolean {
-  return ignorePatterns.some((pattern) => new RegExp(pattern).test(requestPath));
+  return ignorePatterns.some((pattern) => new RegExp(pattern).test(requestPath))
 }
