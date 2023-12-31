@@ -1,7 +1,7 @@
 {
   "name": "set-status",
   "version": "0.0.0",
-  "description": "Set custom status code to the browser.",
+  "description": "Set custom status code to the browser through proxy and meta tag.",
   "bin": "./dist/bin.js",
   "scripts": {
     "dev": "tsx watch src/bin/index.ts",
